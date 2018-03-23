@@ -38,10 +38,10 @@ class Reader():
           else:
             result[section]['nodes'].append(Node(int(el[0]), float(el[1]), float(el[2])))
             
-        if section == 'element_groups':
+        elif section == 'element_groups':
           if len(line) == 1:
             result[section]['count'] = int(el[0])
-          else:
+          else: 
             result[section]['groups'].append(Group(el[0], el[1], el[2]))
             result[section]['number_of_elements'] += int(el[1])
 
@@ -55,7 +55,6 @@ class Reader():
               bar = Bar(el[0], nodes[int(el[1])-1], nodes[int(el[2])-1], groups[elementCounter])
               result['bars'].append(bar)
               currentGroupAmount -= 1
-              bar.show()
             elementCounter += 1
 
          
