@@ -1,25 +1,48 @@
-from elements import Node, Bar, Material, Group
+from elements import Node, Bar, Material, Group, Load
 from pprint import pprint
+
+# query
+#  next((e for e in result['coordinates']['nodes'] if e.n == int(el[0])), None)
 
 class Reader():
   def read(self, filePath):
+    """
+    Reads text file with nodes and returns the result dict with all objects
+    and their nested properties
+    """
+  
     result = {
       'coordinates': {
         'count': 0,
         'nodes': []
       },
-      'element_groups': {
+      'element_groups': { 
         'number_of_elements': 0,
         'count': 0,
         'groups': []
       },
       'bars': [],
+      'materials': {
+        'count': 0,
+        'materials': []
+      },
+      'geometric_properties': {
+        'count': 0
+      },
+      'bcnodes': {
+        'count': 0
+      },
+      'loads': {
+        'count': 0
+      }
     }
     # print(result['coordinates']['nodes'])
     
     with open(filePath,'r') as f:
       lines = f.readlines()
       elementCounter = 0
+      groupCounter = 0
+      geometricCounter = 0
 
       for line in lines:
         line = line.strip()
@@ -56,36 +79,54 @@ class Reader():
               result['bars'].append(bar)
               currentGroupAmount -= 1
             elementCounter += 1
+    
+        elif section == 'materials':
+          if len(el) == 1:
+            result[section]['count'] = el[0]
+          else:
+            material = Material(el[0], el[1], el[2])
+            result[section]['materials'].append(material)
+            result['element_groups']['groups'][groupCounter].setMaterial(material)
 
-         
-          # if len(allAmounts) == 0:
-          #   for i in range(result['element_groups']['count']):
-          #     allAmounts.append(groups[i].amount)
-          #   print(allAmounts)
+            groupCounter += 1
 
-          # for j in range(len(allAmounts)):
+        elif section == 'geometric_properties':
+          if geometricCounter == 0:
+            result[section]['count'] = el[0]
+          else:
+            result['element_groups']['groups'][geometricCounter - 1].setSectionArea(
+              el[0]
+            )
+          geometricCounter += 1
 
+        elif section == 'bcnodes':
+          if len(el) == 1:
+            result[section]['count'] = el[0]
+          else:
+            nodeIndex = next((e for e, item in enumerate(
+                result['coordinates']['nodes']) if item.n == int(el[0])), None
+              )
+            result['coordinates']['nodes'][nodeIndex].setRestriction(int(el[1]))
 
+        elif section == 'loads':
+          if len(el) == 1:
+            result[section]['count'] = el[0]
+          else:
+            load = Load(el[1], el[2])
+            nodeIndex = next((e for e, item in enumerate(
+                result['coordinates']['nodes']) if item.n == int(el[0])), None
+              )
+            result['coordinates']['nodes'][nodeIndex].addLoad(load)
 
+    print('---------- Parsing complete! ----------')
     pprint(result)
-          
-    
-    
-          
+    print('---------------------------------------')
 
-
-
-            # print(eg)
-            
-# line.find("E") != -1
-          # else:
-          #   line = line.lower()        
-          #   num = float(line)
-          #   print("found number",num)
-        
-
-
+    return result
+  
 
 
 reader = Reader()
 reader.read("./input.txt")
+
+
