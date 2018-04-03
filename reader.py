@@ -87,7 +87,6 @@ class Reader():
             material = Material(el[0], el[1], el[2])
             result[section]['materials'].append(material)
             result['element_groups']['groups'][groupCounter].setMaterial(material)
-
             groupCounter += 1
 
         elif section == 'geometric_properties':
@@ -118,6 +117,9 @@ class Reader():
               )
             result['coordinates']['nodes'][nodeIndex].addLoad(load)
 
+    for bar in result['bars']:
+      bar.createLocalArray()
+      
     print('---------- Parsing complete! ----------')
     pprint(result)
     print('---------------------------------------')
@@ -126,7 +128,7 @@ class Reader():
   
 
 
-reader = Reader()
-reader.read("./input.txt")
+# reader = Reader()
+# reader.read("./input.txt")
 
 
