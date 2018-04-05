@@ -10,7 +10,13 @@ class Node():
     self.xRestricted = False
     self.yRestricted = False
     self.loads = []
+    self.dofx = (self.n * 2) - 2
+    self.dofy = (self.n * 2) - 1
+
     # self.dof = 0 / -1 / 1
+
+  def show(self):
+    pprint(vars(self))
 
   def addLoad(self, load):
     self.loads.append(load)
@@ -58,7 +64,7 @@ class Bar():
     ])
 
     self.local = local * eal
-    print(self.local)
+    print('\n bar',self.id,'\n',self.local)
 
   def show(self):
     pprint(vars(self))
