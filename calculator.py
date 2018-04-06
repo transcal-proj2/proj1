@@ -119,8 +119,7 @@ class Calculator():
     strains = []
     for bar in self.result['bars']:
       currentU = []
-      
-
+    
       currentU.append(u[bar.startNode.dofx])
       #print(bar.startNode.dofx)
       currentU.append(u[bar.startNode.dofy])
@@ -136,7 +135,7 @@ class Calculator():
 
       d = np.dot(currentU, bar.localSemEal)
       d = d * (1/bar.l)
-      print("current d: ", d)
+      #print("current d: ", d)
       #dx = d[0] + d[2]
       #dy = d[1] + d[3]
       
@@ -146,9 +145,30 @@ class Calculator():
 
       strain = f * bar.group.material.mde
       strains.append(strain)
+
+      if bar.startNode.xRestricted:
+        reactionX = strain * bar.group.sectionArea * bar.cos
+        if(reactionX != 0):
+          print("n: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
+        
+      if bar.startNode.yRestricted:
+        reactionY = strain * bar.group.sectionArea * bar.sin
+        if(reactionY != 0):
+          print("n: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
+
+      if bar.endNode.xRestricted:
+        reactionX = strain * bar.group.sectionArea * bar.cos
+        if(reactionX != 0):
+          print("n: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
       
-      print("current f: ", f)
-      print("current strain: ", strain)
+      if bar.endNode.yRestricted:
+        reactionY = strain * bar.group.sectionArea * bar.sin
+        if(reactionY != 0):
+          print("n: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
+
+      # print("reactionY: ", reactionY)
+      # print("current f: ", f)
+      # print("current strain: ", strain)
     #print("df:\n {},\n strain:\n {}".format(df, strain))
     # print("df: ", df)
     # print("strains: ", strains)
