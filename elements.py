@@ -13,8 +13,6 @@ class Node():
     self.dofx = (self.n * 2) - 2
     self.dofy = (self.n * 2) - 1
 
-    # self.dof = 0 / -1 / 1
-
   def show(self):
     pprint(vars(self))
 
@@ -38,6 +36,7 @@ class Bar():
     self.cos = None
     self.calculateDegree()
     self.local = None # np.array
+    self.localSemEal = None # np.array
 
   def calculateLength(self):
     dx = abs(self.startNode.x - self.endNode.x)
@@ -45,8 +44,8 @@ class Bar():
     return math.sqrt(dx**2 + dy**2)
 
   def calculateDegree(self):
-    dx = abs(self.startNode.x - self.endNode.x)
-    dy = abs(self.startNode.y - self.endNode.y)
+    dx = self.startNode.x - self.endNode.x
+    dy = self.startNode.y - self.endNode.y
     self.sin = dy/self.l
     self.cos = dx/self.l
 
@@ -62,17 +61,24 @@ class Bar():
       [-1*c2, -1*cs, c2, cs],
       [-1*cs, -1*s2, cs, s2],
     ])
-
+    self.localSemEal = local
+    # print("LOCAL \n",local)
     self.local = local * eal
-    print('\n bar',self.id,'\n',self.local)
+
+    print('\n bar',self.id,'\n',self.localSemEal)
+    print(
+    """Start node: {} End Node: {}
+    sin: {} cos: {}
+    """
+    .format(self.startNode.n,self.endNode.n, self.sin, self.cos))
 
   def show(self):
     pprint(vars(self))
 
 class Load():
   def __init__(self, direction, value):
-    self.direction = direction
-    self.value = value
+    self.direction = int(direction)
+    self.value = float(value)
 
 class Material():
   def __init__(self, mde, tta, tca):

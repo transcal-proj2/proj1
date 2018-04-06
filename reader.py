@@ -71,14 +71,22 @@ class Reader():
         elif section == 'incidences':
           groups = result['element_groups']['groups']
           nodes = result['coordinates']['nodes']
+          print(elementCounter)
+          print(el)
           currentGroupAmount = groups[elementCounter].amount
-
+          print("the current group has", currentGroupAmount, 'elements')
           if elementCounter < result['element_groups']['number_of_elements']:
             if (currentGroupAmount > 0):
               bar = Bar(el[0], nodes[int(el[1])-1], nodes[int(el[2])-1], groups[elementCounter])
+              print(
+              """
+              Bar {} created 
+              Start node: {} End Node: {}
+              """.format(bar.id, bar.startNode.n, bar.endNode.n))
               result['bars'].append(bar)
               currentGroupAmount -= 1
-            elementCounter += 1
+            if(currentGroupAmount == 0):
+              elementCounter += 1
     
         elif section == 'materials':
           if len(el) == 1:
@@ -127,8 +135,7 @@ class Reader():
     return result
   
 
-
 # reader = Reader()
-# reader.read("./input.txt")
+# reader.read("./arquivoentrada.fem")
 
 
