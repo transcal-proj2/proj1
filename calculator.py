@@ -21,6 +21,7 @@ class Calculator():
     return zeroedGlobal
     
   def sortAndReverseNodes(self):
+    #print("MATERIALS: ", self.result["element_groups"]["groups"][1].sectionArea)
     self.result['coordinates']['nodes'] = sorted(self.result['coordinates']['nodes'], key=lambda node: node.n)
     # self.result['coordinates']['nodes'].reverse()
 
@@ -62,7 +63,9 @@ class Calculator():
     self.restrictedDofs = np.flip(np.unique(self.restrictedDofs),0)
     # print(restrictedDofs)
 
+    #self.globalK[5][5] = 40728.26
     print('GLOBAL K ANTES: \n', self.globalK, '\n')
+    
 
     for rd in self.restrictedDofs:
       self.globalK = np.delete(self.globalK, rd, 0)
@@ -85,7 +88,7 @@ class Calculator():
       f[node.dofx] = fx
       f[node.dofy] = fy
     
-    print(f)
+    print("f: ", f)
     print(np.shape(f))
 
     print(self.restrictedDofs)
@@ -100,26 +103,29 @@ class Calculator():
     return f
 
   def getUs(self):
+    
     print('getus \n')
     f = self.createForcesMatrix()
     print('dofs presos:', self.restrictedDofs)
     # b = np.linalg.inv(self.globalK)
     u = np.linalg.solve(self.globalK, f)  # Solution to the system a x = b
-    print(u)
+    print("U sem corte: ", u)
     
     for i in np.flip(self.restrictedDofs, 0):
-      print(i)
+      #print(i)
       u = np.insert(u, i, 0)
     print('u = \n', u)
     return u
 
   def calcDeformation(self):
     u = self.getUs()
-    df = []
+    deformacoes = []
     strains = []
     for bar in self.result['bars']:
       currentU = []
-    
+      print("Barra: ", bar.id)
+      print("Area: ", bar.group.sectionArea)
+      print("GrupoID: ", bar.group.n)
       currentU.append(u[bar.startNode.dofx])
       #print(bar.startNode.dofx)
       currentU.append(u[bar.startNode.dofy])
@@ -131,40 +137,49 @@ class Calculator():
       #print("alo")
       currentU = np.array(currentU)
       #print(np.shape(currentU))
-      #print("Current u: ", currentU)
+      print("Current u: ", currentU)
+      matrizCosSin = np.array([-1*bar.cos, -1*bar.sin, bar.cos, bar.sin])
+      deforamacao = np.dot(matrizCosSin, currentU)
+      deforamacao = deforamacao * (1/bar.l)
+      print("sin: {}, cos: {}".format(bar.sin, bar.cos))
+      deformacoes.append(deforamacao)
+      print("N Bar: ", bar.id)
+      print("Deformacao especifica: ", deforamacao)
+      #print("------------------")
 
-      d = np.dot(currentU, bar.localSemEal)
-      d = d * (1/bar.l)
-      #print("current d: ", d)
-      #dx = d[0] + d[2]
-      #dy = d[1] + d[3]
-      
-      f = (d[0]**2 + d[1]**2) ** 0.5
+      #f = (d[0]**2 + d[1]**2) ** 0.5
       #print(f)
-      df.append(f)
+      #df.append(f)
 
-      strain = f * bar.group.material.mde
+      strain = deforamacao * bar.group.material.mde
       strains.append(strain)
+      
+      print("Tensao: ", strain)
+      print("------------------")
 
       if bar.startNode.xRestricted:
-        reactionX = strain * bar.group.sectionArea * bar.cos
-        if(reactionX != 0):
-          print("n: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
+         reactionX = strain * bar.group.sectionArea * -bar.cos
+         if(reactionX != 0):
+           print("nó: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
+           print("------------------")
         
       if bar.startNode.yRestricted:
-        reactionY = strain * bar.group.sectionArea * bar.sin
+        reactionY = strain * bar.group.sectionArea * -bar.sin
         if(reactionY != 0):
-          print("n: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
+          print("nó: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
+          print("------------------")
 
       if bar.endNode.xRestricted:
         reactionX = strain * bar.group.sectionArea * bar.cos
         if(reactionX != 0):
-          print("n: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
+          print("nó: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
+          print("------------------")
       
       if bar.endNode.yRestricted:
         reactionY = strain * bar.group.sectionArea * bar.sin
         if(reactionY != 0):
-          print("n: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
+          print("nó: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
+          print("------------------")
 
       # print("reactionY: ", reactionY)
       # print("current f: ", f)
@@ -172,19 +187,40 @@ class Calculator():
     #print("df:\n {},\n strain:\n {}".format(df, strain))
     # print("df: ", df)
     # print("strains: ", strains)
-    return df, strains
+    return deformacoes, strains
       #print("dx: {}, dy: {}, f: {}".format(dx, dy, f))
       # print(bar.localSemEal)
-  
+
+  def is_elastica(self, deformacao, strains, admissivel):
+    for i in range(len(self.result["bars"])) :
+      aguenta = False
+      #print("Tensao aplicada na barra {}: {}".format(self.result["bars"][i].id, strains[i]))
+      if(strains[i] > admissivel):
+        aguenta = True
+        print("Barra {} nao permanece na fase elastica".format(self.result["bars"][i].id))
+
+        newArea = (abs(strains[i]) * self.result["bars"][i].group.sectionArea)/admissivel
+        print("Nova area da Barra {} deve ser de: {}".format(self.result["bars"][i].id, newArea))
+
+      else:
+        print("Barra {} permanece na fase elastica".format(self.result["bars"][i].id))
+
+      #print
+
+
+
+
 reader = Reader()  
-result = reader.read('./input.txt')
+result = reader.read('./input_p1.txt')
 # jr = jsonpickle.encode(result,unpicklable=False)
 # print(jr)
 calculator = Calculator(result)
 calculator.calculate()
 # calculator.createForcesMatrix()
 # calculator.getUs()
-calculator.calcDeformation()
+deformacao, strains = calculator.calcDeformation()
+calculator.is_elastica(deformacao, strains, 900)
+
 
 
 

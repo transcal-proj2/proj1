@@ -71,30 +71,31 @@ class Reader():
         elif section == 'incidences':
           groups = result['element_groups']['groups']
           nodes = result['coordinates']['nodes']
-          print(elementCounter)
           print(el)
-          currentGroupAmount = groups[elementCounter].amount
-          print("the current group has", currentGroupAmount, 'elements')
-          if elementCounter < result['element_groups']['number_of_elements']:
-            if (currentGroupAmount > 0):
-              bar = Bar(el[0], nodes[int(el[1])-1], nodes[int(el[2])-1], groups[elementCounter])
-              print(
-              """
-              Bar {} created 
-              Start node: {} End Node: {}
-              """.format(bar.id, bar.startNode.n, bar.endNode.n))
-              result['bars'].append(bar)
-              currentGroupAmount -= 1
-            if(currentGroupAmount == 0):
-              elementCounter += 1
-    
+
+          currentGroup = groups[groupCounter]
+          if (currentGroup.amount == 0):
+            groupCounter += 1
+            currentGroup = groups[groupCounter]
+          
+          print("Group n: {} count: {}".format(currentGroup.n, currentGroup.amount))
+        
+          bar = Bar(el[0], nodes[int(el[1])-1], nodes[int(el[2])-1], groups[groupCounter])
+          print(
+          """
+          Bar {} created 
+          Start node: {} End Node: {} Group: {}
+          """.format(bar.id, bar.startNode.n, bar.endNode.n, bar.group))
+          result['bars'].append(bar)
+          currentGroup.amount -= 1
+            
         elif section == 'materials':
           if len(el) == 1:
             result[section]['count'] = el[0]
           else:
             material = Material(el[0], el[1], el[2])
             result[section]['materials'].append(material)
-            result['element_groups']['groups'][groupCounter].setMaterial(material)
+            result['element_groups']['groups'][groupCounter - 1].setMaterial(material)
             groupCounter += 1
 
         elif section == 'geometric_properties':
@@ -125,9 +126,12 @@ class Reader():
               )
             result['coordinates']['nodes'][nodeIndex].addLoad(load)
 
+    result["bars"][2].setGroup(result["element_groups"]["groups"][1])
+
     for bar in result['bars']:
       bar.createLocalArray()
-      
+
+    
     print('---------- Parsing complete! ----------')
     pprint(result)
     print('---------------------------------------')

@@ -38,22 +38,27 @@ class Bar():
     self.local = None # np.array
     self.localSemEal = None # np.array
 
+  def setGroup(self,group):
+    self.group = group
   def calculateLength(self):
-    dx = abs(self.startNode.x - self.endNode.x)
-    dy = abs(self.startNode.y - self.endNode.y)
+    dx = self.startNode.x - self.endNode.x
+    dy = self.startNode.y - self.endNode.y
     return math.sqrt(dx**2 + dy**2)
 
   def calculateDegree(self):
-    dx = self.startNode.x - self.endNode.x
-    dy = self.startNode.y - self.endNode.y
+    dx = self.endNode.x - self.startNode.x
+    
+    dy = self.endNode.y - self.startNode.y
     self.sin = dy/self.l
+    #print("SInnnnn: ", self.sin)
     self.cos = dx/self.l
+    #print("COSSSS: ", self.cos)
 
   def createLocalArray(self):
     c2 = self.cos**2
     s2 = self.sin**2
     cs = self.cos * self.sin
-    # print('mde:',type(self.group.material.mde), ' section area:',type(self.group.sectionArea), 'l:', type(self.l))
+    print('mde:',type(self.group.material.mde), ' section area:',self.group.sectionArea, 'l:', type(self.l))
     eal = (self.group.material.mde * self.group.sectionArea) / self.l
     local = np.array([
       [c2, cs, -1*c2, -1*cs],
@@ -65,7 +70,7 @@ class Bar():
     # print("LOCAL \n",local)
     self.local = local * eal
 
-    print('\n bar',self.id,'\n',self.localSemEal)
+    print('\n bar',self.id,'\n',self.local)
     print(
     """Start node: {} End Node: {}
     sin: {} cos: {}
