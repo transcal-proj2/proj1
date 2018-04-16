@@ -12,34 +12,32 @@ import numpy as np
 class Calculator():
   def __init__(self, result = {}):
     self.result = result
-    self.sortAndReverseNodes()
-    self.globalK = self.createGlobalK()
     self.restrictedDofs = []
 
-    self.createForcesMatrix()
-    self.getUs()
-    self.deformacao, self.strains = calculator.calcDeformation()
-    self.is_elastica(self.deformacao, self.strains, 900)
+    self.sortAndReverseNodes()
 
-  def createGlobalK(self):
-    l = len(self.result['coordinates']['nodes']) * 2
-    zeroedGlobal = np.zeros((l, l))
-    # print("global created: \n", zeroedGlobal)
-    return zeroedGlobal
+    self.globalK = self.createGlobalK()
+    self.forces = self.createForcesMatrix()
+    self.us = self.createUs()
+    self.deformacao, self.strains = self.calcDeformation()
+    self.is_elastica(self.deformacao, self.strains, 900)
     
+    for bar in self.result['bars']:
+      print(bar.strain)
+
+
   def sortAndReverseNodes(self):
     #print("MATERIALS: ", self.result["element_groups"]["groups"][1].sectionArea)
     self.result['coordinates']['nodes'] = sorted(self.result['coordinates']['nodes'], key=lambda node: node.n)
-    # self.result['coordinates']['nodes'].reverse()
-
-    # for node in self.result['coordinates']['nodes']:
-    #   print(node.n)
     self.log("-> Nodes sorted and reversed \n")
 
   def log(self, input):
     print('[Calculator]', input)
 
-  def calculate(self):
+  def createGlobalK(self):
+    l = len(self.result['coordinates']['nodes']) * 2
+    globalK = np.zeros((l, l))
+
     for bar in self.result['bars']:
       # print(bar.id)
       s = bar.startNode
@@ -55,7 +53,7 @@ class Calculator():
       
       for i in range(4):
         for j in range(4):
-          self.globalK[m[i][j][0]][m[i][j][1]] += bar.local[i][j]
+          globalK[m[i][j][0]][m[i][j][1]] += bar.local[i][j]
             
     #print(self.globalK)
     restrictedX = list(filter(lambda n: n.xRestricted == True, self.result['coordinates']['nodes']))
@@ -71,14 +69,14 @@ class Calculator():
     # print(restrictedDofs)
 
     #self.globalK[5][5] = 40728.26
-    print('GLOBAL K ANTES: \n', self.globalK, '\n')
+    print('GLOBAL K ANTES: \n', globalK, '\n')
     
-
     for rd in self.restrictedDofs:
-      self.globalK = np.delete(self.globalK, rd, 0)
-      self.globalK = np.delete(self.globalK, rd, 1)
+      globalK = np.delete(globalK, rd, 0)
+      globalK = np.delete(globalK, rd, 1)
 
     # print('GLOBAL K DEPOIS: \n', self.globalK, '\n')
+    return globalK
 
 
   def createForcesMatrix(self):
@@ -109,10 +107,9 @@ class Calculator():
     # print(np.shape(f))
     return f
 
-  def getUs(self):
-    
+  def createUs(self):
     print('getus \n')
-    f = self.createForcesMatrix()
+    f = self.forces
     print('dofs presos:', self.restrictedDofs)
     # b = np.linalg.inv(self.globalK)
     # u = np.linalg.solve(self.globalK, f)  # Solution to the system a x = b
@@ -126,12 +123,21 @@ class Calculator():
       #print(i)
       u = np.insert(u, i, 0)
     print('u = \n', u)
+
+
+    print(self.result['coordinates']['nodes'])
+    i = 0
+    while i < len(u):
+      self.result['coordinates']['nodes'][int(i/2)].deslocx = u[i]
+      self.result['coordinates']['nodes'][int(i/2)].deslocy = u[i + 1]
+      i += 2
+
     return u
 
   def calcDeformation(self):
-    u = self.getUs()
+    u = self.us
     deformacoes = []
-    strains = []
+    stresses = []
     for bar in self.result['bars']:
       currentU = []
       print("Barra: ", bar.id)
@@ -147,45 +153,52 @@ class Calculator():
       #print(np.shape(currentU))
       print("Current u: ", currentU)
       matrizCosSin = np.array([-1*bar.cos, -1*bar.sin, bar.cos, bar.sin])
-      deforamacao = np.dot(matrizCosSin, currentU)
-      deforamacao = deforamacao * (1/bar.l)
+      deformacao = np.dot(matrizCosSin, currentU)
+      deformacao = deformacao * (1/bar.l)
       print("sin: {}, cos: {}".format(bar.sin, bar.cos))
-      deformacoes.append(deforamacao)
+      deformacoes.append(deformacao)
       print("N Bar: ", bar.id)
-      print("Deformacao especifica: ", deforamacao)
+      print("Deformacao especifica: ", deformacao)
+      bar.strain = deformacao
+
       #print("------------------")
 
       #f = (d[0]**2 + d[1]**2) ** 0.5
       #print(f)
       #df.append(f)
 
-      strain = deforamacao * bar.group.material.mde
-      strains.append(strain)
+      stress = deformacao * bar.group.material.mde
+      stresses.append(stress)
+      bar.stress = stress
       
-      print("Tensao: ", strain)
+      print("Tensao: ", stress)
       print("------------------")
 
       if bar.startNode.xRestricted:
-         reactionX = strain * bar.group.sectionArea * -bar.cos
+         reactionX = stress * bar.group.sectionArea * -bar.cos
          if(reactionX != 0):
+           bar.startNode.rf[0] = reactionX
            print("no: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
            print("------------------")
         
       if bar.startNode.yRestricted:
-        reactionY = strain * bar.group.sectionArea * -bar.sin
+        reactionY = stress * bar.group.sectionArea * -bar.sin
         if(reactionY != 0):
+          bar.startNode.rf[1] = reactionY
           print("no: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
           print("------------------")
 
       if bar.endNode.xRestricted:
-        reactionX = strain * bar.group.sectionArea * bar.cos
+        reactionX = stress * bar.group.sectionArea * bar.cos
         if(reactionX != 0):
+          bar.endNode.rf[0] = reactionX
           print("no: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
           print("------------------")
       
       if bar.endNode.yRestricted:
-        reactionY = strain * bar.group.sectionArea * bar.sin
+        reactionY = stress * bar.group.sectionArea * bar.sin
         if(reactionY != 0):
+          bar.endNode.rf[1] = reactionY
           print("no: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
           print("------------------")
 
@@ -195,7 +208,7 @@ class Calculator():
     #print("df:\n {},\n strain:\n {}".format(df, strain))
     # print("df: ", df)
     # print("strains: ", strains)
-    return deformacoes, strains
+    return deformacoes, stresses
       #print("dx: {}, dy: {}, f: {}".format(dx, dy, f))
       # print(bar.localSemEal)
 
@@ -215,16 +228,14 @@ class Calculator():
 
       #print
 
-
-
+  def getResult(self):
+    return self.result
 
 reader = Reader()  
 result = reader.read('./input_p1.txt')
 # jr = jsonpickle.encode(result,unpicklable=False)
 # print(jr)
 calculator = Calculator(result)
-calculator.calculate()
-
 
 
 

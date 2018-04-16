@@ -12,6 +12,9 @@ class Node():
     self.loads = []
     self.dofx = (self.n * 2) - 2
     self.dofy = (self.n * 2) - 1
+    self.deslocx = 0
+    self.deslocy = 0
+    self.rf = [0, 0, 0] # reaction forces
 
   def show(self):
     pprint(vars(self))
@@ -37,6 +40,8 @@ class Bar():
     self.calculateDegree()
     self.local = None # np.array
     self.localSemEal = None # np.array
+    self.strain = None # deformacao
+    self.stress = None # tensao
 
   def setGroup(self,group):
     self.group = group

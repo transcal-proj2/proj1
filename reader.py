@@ -92,10 +92,11 @@ class Reader():
         elif section == 'materials':
           if len(el) == 1:
             result[section]['count'] = el[0]
+            groupCounter = 0
           else:
             material = Material(el[0], el[1], el[2])
             result[section]['materials'].append(material)
-            result['element_groups']['groups'][groupCounter - 1].setMaterial(material)
+            result['element_groups']['groups'][groupCounter].setMaterial(material)
             groupCounter += 1
 
         elif section == 'geometric_properties':
