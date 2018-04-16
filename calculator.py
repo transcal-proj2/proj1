@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from reader import Reader
 from pprint import pprint
+from solver import Solver
 import numpy as np
-import jsonpickle
+# import jsonpickle
 
-print(jsonpickle)
-np.set_printoptions(threshold=np.nan,edgeitems=6,linewidth=200)
+# print(jsonpickle)
+# np.set_printoptions(threshold=np.nan,edgeitems=6,linewidth=200)
 
 
 class Calculator():
@@ -114,7 +115,11 @@ class Calculator():
     f = self.createForcesMatrix()
     print('dofs presos:', self.restrictedDofs)
     # b = np.linalg.inv(self.globalK)
-    u = np.linalg.solve(self.globalK, f)  # Solution to the system a x = b
+    # u = np.linalg.solve(self.globalK, f)  # Solution to the system a x = b
+    solver = Solver(600, 10**-9, self.globalK, f)
+
+    u = solver.gauss()[0]
+
     print("U sem corte: ", u)
     
     for i in np.flip(self.restrictedDofs, 0):
@@ -132,15 +137,12 @@ class Calculator():
       print("Barra: ", bar.id)
       print("Area: ", bar.group.sectionArea)
       print("GrupoID: ", bar.group.n)
+
       currentU.append(u[bar.startNode.dofx])
-      #print(bar.startNode.dofx)
       currentU.append(u[bar.startNode.dofy])
-      #print(bar.startNode.dofy)
       currentU.append(u[bar.endNode.dofx])
-      #print(bar.endNode.dofx)
       currentU.append(u[bar.endNode.dofy])
-      #print(bar.endNode.dofy)
-      #print("alo")
+
       currentU = np.array(currentU)
       #print(np.shape(currentU))
       print("Current u: ", currentU)
