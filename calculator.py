@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from reader import Reader
 from pprint import pprint
 import numpy as np
@@ -13,6 +14,11 @@ class Calculator():
     self.sortAndReverseNodes()
     self.globalK = self.createGlobalK()
     self.restrictedDofs = []
+
+    self.createForcesMatrix()
+    self.getUs()
+    self.deformacao, self.strains = calculator.calcDeformation()
+    self.is_elastica(self.deformacao, self.strains, 900)
 
   def createGlobalK(self):
     l = len(self.result['coordinates']['nodes']) * 2
@@ -160,25 +166,25 @@ class Calculator():
       if bar.startNode.xRestricted:
          reactionX = strain * bar.group.sectionArea * -bar.cos
          if(reactionX != 0):
-           print("nó: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
+           print("no: {}, FX, valor: {}".format(bar.startNode.n, reactionX))
            print("------------------")
         
       if bar.startNode.yRestricted:
         reactionY = strain * bar.group.sectionArea * -bar.sin
         if(reactionY != 0):
-          print("nó: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
+          print("no: {}, FY, valor: {}".format(bar.startNode.n, reactionY))
           print("------------------")
 
       if bar.endNode.xRestricted:
         reactionX = strain * bar.group.sectionArea * bar.cos
         if(reactionX != 0):
-          print("nó: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
+          print("no: {}, FX, valor: {}".format(bar.endNode.n, reactionX))
           print("------------------")
       
       if bar.endNode.yRestricted:
         reactionY = strain * bar.group.sectionArea * bar.sin
         if(reactionY != 0):
-          print("nó: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
+          print("no: {}, FY, valor: {}".format(bar.endNode.n, reactionY))
           print("------------------")
 
       # print("reactionY: ", reactionY)
@@ -216,10 +222,7 @@ result = reader.read('./input_p1.txt')
 # print(jr)
 calculator = Calculator(result)
 calculator.calculate()
-# calculator.createForcesMatrix()
-# calculator.getUs()
-deformacao, strains = calculator.calcDeformation()
-calculator.is_elastica(deformacao, strains, 900)
+
 
 
 
