@@ -3,11 +3,10 @@ from reader import Reader
 from pprint import pprint
 from solver import Solver
 import numpy as np
-# import jsonpickle
+import jsonpickle
 
 # print(jsonpickle)
 # np.set_printoptions(threshold=np.nan,edgeitems=6,linewidth=200)
-
 
 class Calculator():
   def __init__(self, result = {}):
@@ -231,11 +230,13 @@ class Calculator():
   def getResult(self):
     return self.result
 
-reader = Reader()  
-result = reader.read('./input_p1.txt')
-# jr = jsonpickle.encode(result,unpicklable=False)
-# print(jr)
-calculator = Calculator(result)
+  def getResultAsJSON(self):
+    return jsonpickle.encode(self.result, unpicklable=False)
+
+# reader = Reader()  
+# result = reader.read('./input_p1.txt')
+# # print(jr)
+# calculator = Calculator(result)
 
 
 

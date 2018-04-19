@@ -127,12 +127,9 @@ class Reader():
               )
             result['coordinates']['nodes'][nodeIndex].addLoad(load)
 
-    result["bars"][2].setGroup(result["element_groups"]["groups"][1])
-
     for bar in result['bars']:
       bar.createLocalArray()
 
-    
     print('---------- Parsing complete! ----------')
     pprint(result)
     print('---------------------------------------')
